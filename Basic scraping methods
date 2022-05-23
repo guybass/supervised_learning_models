@@ -1,0 +1,55 @@
+from scrapy import Selector
+import requests
+def read_vars(vars):
+  final_vars = []
+  for var in vars:
+    final_vars.append(var[9:19])
+  return final_vars
+
+
+# Create the string html containing the HTML source
+# we can replace this line by coping the HTML by hand
+#url - is a variable with a URL path
+html = requests.get( url ).content
+print(html)
+# Create the Selector object sel from html
+sel = Selector( text=html )
+
+
+#this is a basic scraper to get all the original data we need from the web site "macro trends
+
+url = 'https://www.macrotrends.net/stocks/charts/EA/electronic-arts/cash-flow-statement'
+html = requests.get( url ).text.split('\n')
+
+# Set up variable 
+original = html[1142] # this is the original data as read from the html of the mebsite
+col_vars = html[1153] # this is a dictionary of the variable names
+
+# make the vars a list of the names of the columns witch are the dates that the company had a financial report
+vars = vars.split(',')
+vars = read_vars(vars[4::2])
+n = len(vars)
+
+# This function reads the original data
+def read_original(original, n):
+  final_data, keys = {}, []
+  cheking_set = set([0, 1, 3, 4])
+  for data in original:
+    if " s: '" in data:
+      keys.append(data[5:-1])
+      final_data[keys[-1]] = {}
+    elif data[1:3] == '20':
+      final = ""
+      for i in range(len(data)):
+        if data[-(1 + i)] == ':':
+          break
+        else:
+          final = data[-(1 + i)] + final
+      final_data[keys[-1]][data[1:11]] = final
+  return final_data, keys
+vars = read_vars(vars[4::2])
+data, keys = read_original(original, n)
+print(data)
+print(keys)
+print(vars)
+print(original)
