@@ -1,36 +1,16 @@
 from scrapy import Selector
 import requests
+
+# General scraper
+
+# This function reads the variabels
 def read_vars(vars):
   final_vars = []
   for var in vars:
     final_vars.append(var[9:19])
   return final_vars
 
-
-# Create the string html containing the HTML source
-# we can replace this line by coping the HTML by hand
-#url - is a variable with a URL path
-html = requests.get( url ).content
-print(html)
-# Create the Selector object sel from html
-sel = Selector( text=html )
-
-
-#this is a basic scraper to get all the original data we need from the web site "macro trends
-
-url = 'https://www.macrotrends.net/stocks/charts/EA/electronic-arts/cash-flow-statement'
-html = requests.get( url ).text.split('\n')
-
-# Set up variable 
-original = html[1142] # this is the original data as read from the html of the mebsite
-col_vars = html[1153] # this is a dictionary of the variable names
-
-# make the vars a list of the names of the columns witch are the dates that the company had a financial report
-vars = vars.split(',')
-vars = read_vars(vars[4::2])
-n = len(vars)
-
-# This function reads the original data
+# This function make the data
 def read_original(original, n):
   final_data, keys = {}, []
   cheking_set = set([0, 1, 3, 4])
@@ -47,9 +27,41 @@ def read_original(original, n):
           final = data[-(1 + i)] + final
       final_data[keys[-1]][data[1:11]] = final
   return final_data, keys
-vars = read_vars(vars[4::2])
-data, keys = read_original(original, n)
-print(data)
-print(keys)
-print(vars)
-print(original)
+
+# This function takes a url and re shape it and take the data with the nake being gave in adition to the data
+def scrape_a_company(url):
+  # Set up endings
+  endings = ["/income-statement?freq=Q", "/balance-sheet?freq=Q", "/cash-flow-statement?freq=Q", "/financial-ratios?freq=Q"]
+  # Split the url
+  url = url.split('/')
+  # Take the name of company
+  name = url[-2]
+  # Set up data
+  final_data = {}
+  temp =""
+  for str_ in url[:-1]:
+    temp += str_ + '/'
+  url = str(temp)
+  for end in endings:
+    # Tempo url to scarpe
+    temp = url + end
+    # Take the html as text
+    html = requests.get(temp).text.split('\n')
+    #set up general keynames
+    temp = end[1:-7]
+    # Set up variabels
+    if end == '/financial-ratios?freq=Q':
+      original = html[1134][20:].split(',')
+      vars = html[1145].split(',')
+    else:
+      original = html[1142][20:].split(',')
+      vars = html[1153].split(',')
+    # Procces the data
+    vars = read_vars(vars[4::2])
+    n = len(vars)
+    data, keys = read_original(original, n)
+    # save the data
+    final_data[temp] ={ 'data':data,'keys':keys,'vars':vars}
+  return name, final_data
+"example of calling"
+name, final_data = scrape_a_company('https://www.macrotrends.net/stocks/charts/EA/electronic-arts/stock-price-history')
