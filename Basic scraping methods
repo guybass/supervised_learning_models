@@ -65,3 +65,23 @@ def scrape_a_company(url):
   return name, final_data
 "example of calling"
 name, final_data = scrape_a_company('https://www.macrotrends.net/stocks/charts/EA/electronic-arts/stock-price-history')
+
+# Make the data DataFrameb
+def transform_data_to_DF(name, final_data):
+  final_ = []
+  for key in final_data.keys():
+    #Un pack the data
+    keys, vars, data = final_data[key]['keys'], final_data[key]['vars'], final_data[key]['data']
+    dt = {}
+    for i in keys:
+      temp = []
+      for j in vars:
+        var = data[i][j].strip('}').strip(';').strip(']').strip('"')
+        try:
+          temp.append(float(var))
+        except:
+          temp.append(var)
+          
+      dt[i] = temp
+    final_.append([key, pd.DataFrame(dt)])
+  return final_
